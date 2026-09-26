@@ -1,0 +1,44 @@
+import re
+import datetime
+
+class RuleBasedChatbot:
+    def __init__(self):
+        self.rules = {
+            r'\b(hello|hi|hey|greetings)\b': "Hello! How can I assist you today?",
+            r'\b(how are you|how\'s it going)\b': "I'm doing well, thank you for asking! How are you?",
+            r'\b(what is your name|who are you)\b': "I am CodSoft AI Bot, your virtual assistant.",
+            r'\b(time|current time)\b': lambda: f"The current time is {datetime.datetime.now().strftime('%H:%M:%S')}.",
+            r'\b(date|today\'s date)\b': lambda: f"Today's date is {datetime.datetime.now().strftime('%Y-%m-%d')}.",
+            r'\b(help|support)\b': "I can answer basic questions, tell you the time, date, or converse with you.",
+            r'\b(bye|exit|quit|goodbye)\b': "Goodbye! Have a great day ahead!"
+        }
+
+    def get_response(self, user_input: str) -> str:
+        user_input_clean = user_input.lower().strip()
+        
+        for pattern, response in self.rules.items():
+            if re.search(pattern, user_input_clean):
+                if callable(response):
+                    return response()
+                return response
+        
+        return "I'm sorry, I didn't quite understand that. Could you rephrase your question?"
+
+    def start_chat(self):
+        print("--- CodSoft Rule-Based Chatbot ---")
+        print("Type 'exit' or 'bye' to end the conversation.\n")
+        
+        while True:
+            user_input = input("You: ")
+            if not user_input.strip():
+                continue
+                
+            response = self.get_response(user_input)
+            print(f"Bot: {response}")
+            
+            if re.search(r'\b(bye|exit|quit|goodbye)\b', user_input.lower()):
+                break
+
+if __name__ == "__main__":
+    bot = RuleBasedChatbot()
+    bot.start_chat()
