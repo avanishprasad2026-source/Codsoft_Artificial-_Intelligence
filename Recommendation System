@@ -1,0 +1,59 @@
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+
+class MovieRecommendationSystem:
+    def __init__(self, data: pd.DataFrame):
+        self.df = data
+        self.indices = pd.Series(data.index, index=data['title']).drop_duplicates()
+        self.tfidf_matrix = None
+        self.cosine_sim = None
+        self._build_model()
+
+    def _build_model(self):
+        tfidf = TfidfVectorizer(stop_words='english')
+        self.df['description'] = self.df['description'].fillna('')
+        self.tfidf_matrix = tfidf.fit_transform(self.df['description'])
+        self.cosine_sim = linear_kernel(self.tfidf_matrix, self.tfidf_matrix)
+
+    def recommend(self, title: str, top_n: int = 3):
+        if title not in self.indices:
+            return f"Movie '{title}' not found in the database."
+
+        idx = self.indices[title]
+        sim_scores = list(enumerate(self.cosine_sim[idx]))
+        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+        sim_scores = sim_scores[1:top_n + 1]
+
+        movie_indices = [i[0] for i in sim_scores]
+        return self.df[['title', 'genre']].iloc[movie_indices]
+
+if __name__ == "__main__":
+    movies_data = {
+        'title': [
+            'Inception', 
+            'Interstellar', 
+            'The Dark Knight', 
+            'The Notebook', 
+            'La La Land', 
+            'Avengers: Endgame'
+        ],
+        'genre': ['Sci-Fi', 'Sci-Fi', 'Action', 'Romance', 'Romance/Musical', 'Action/Sci-Fi'],
+        'description': [
+            'A thief who steals corporate secrets through dream-sharing technology is given the inverse task.',
+            'A team of explorers travel through a wormhole in space in an attempt to ensure humanity survival.',
+            'When the menace known as the Joker wreaks havoc, Batman must accept one of the greatest tests.',
+            'A poor yet passionate young man falls in love with a rich young woman, giving her a sense of freedom.',
+            'While navigating their careers in Los Angeles, a pianist and an actress fall in love while pursuing dreams.',
+            'After devastating events, the universe is in ruins. The Avengers assemble once more to reverse actions.'
+        ]
+    }
+
+    df = pd.DataFrame(movies_data)
+    recommender = MovieRecommendationSystem(df)
+
+    print("--- Recommendations for 'Inception' ---")
+    print(recommender.recommend('Inception', top_n=2))
+
+    print("\n--- Recommendations for 'The Notebook' ---")
+    print(recommender.recommend('The Notebook', top_n=2))
